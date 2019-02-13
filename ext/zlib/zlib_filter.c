@@ -232,11 +232,13 @@ static php_stream_filter_status_t php_zlib_deflate_filter(
 		php_stream_bucket_delref(bucket);
 	}
 
-	if (flags & PSFS_FLAG_FLUSH_CLOSE) {
+	if (flags & PSFS_FLAG_FLUSH_CLOSE || flags & PSFS_FLAG_FLUSH_INC) {
+	    int flush_type = flags & PSFS_FLAG_FLUSH_INC ? Z_PARTIAL_FLUSH : Z_FINISH;
+
 		/* Spit it out! */
 		status = Z_OK;
 		while (status == Z_OK) {
-			status = deflate(&(data->strm), Z_FINISH);
+			status = deflate(&(data->strm), flush_type);
 			if (data->strm.avail_out < data->outbuf_len) {
 				size_t bucketlen = data->outbuf_len - data->strm.avail_out;
 
