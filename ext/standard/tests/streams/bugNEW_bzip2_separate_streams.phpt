@@ -12,14 +12,18 @@ if(!is_resource($f1)){
 
 printf("Written %d bytes\n", fwrite($h, "foofoo"));
 
+fflush($h);
+
 printf("Written %d bytes\n", fwrite($h, "barbar"));
+
+fflush($h);
 
 fseek($h, 0);
 
 
 $reader = fopen('php://memory', "r+");
 
-$f2 = stream_filter_append($reader, 'bzip2.decompress', STREAM_FILTER_WRITE);
+$f2 = stream_filter_append($reader, 'bzip2.decompress', STREAM_FILTER_WRITE, ["concatenated" => true]);
 
 if(!is_resource($f2)){
     throw new Exception("cannot apply decompress filter");

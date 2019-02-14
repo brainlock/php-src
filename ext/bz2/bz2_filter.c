@@ -283,13 +283,6 @@ static php_stream_filter_status_t php_bz2_compress_filter(
 				exit_status = PSFS_PASS_ON;
 			}
 		}
-
-        if (flags & PSFS_FLAG_FLUSH_INC) {
-            BZ2_bzCompressEnd(&(data->strm));
-            data->strm.avail_out = data->outbuf_len;
-            data->strm.next_out = data->outbuf;
-            status = BZ2_bzCompressInit(&(data->strm), data->blockSize100k, 0, data->workFactor);
-        }
 	}
 
 	if (bytes_consumed) {
