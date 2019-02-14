@@ -40,6 +40,9 @@ typedef struct _php_bz2_filter_data {
 	size_t inbuf_len;
 	size_t outbuf_len;
 
+	int blockSize100k;
+	int workFactor;
+
 	enum strm_status status;              /* Decompress option */
 	unsigned int small_footprint : 1;     /* Decompress option */
 	unsigned int expect_concatenated : 1; /* Decompress option */
@@ -263,7 +266,9 @@ static php_stream_filter_status_t php_bz2_compress_filter(
 		php_stream_bucket_delref(bucket);
 	}
 
-	if (flags & PSFS_FLAG_FLUSH_CLOSE) {
+	if (flags & PSFS_FLAG_FLUSH_CLOSE || flags & PSFS_FLAG_FLUSH_INC) {
+        int flush_type = flags & PSFS_FLAG_FLUSH_INC ? BZ_FLUSH : BZ_FINISH;
+
 		/* Spit it out! */
 		status = BZ_FINISH_OK;
 		while (status == BZ_FINISH_OK) {
@@ -278,6 +283,13 @@ static php_stream_filter_status_t php_bz2_compress_filter(
 				exit_status = PSFS_PASS_ON;
 			}
 		}
+
+        if (flags & PSFS_FLAG_FLUSH_INC) {
+            BZ2_bzCompressEnd(&(data->strm));
+            data->strm.avail_out = data->outbuf_len;
+            data->strm.next_out = data->outbuf;
+            status = BZ2_bzCompressInit(&(data->strm), data->blockSize100k, 0, data->workFactor);
+        }
 	}
 
 	if (bytes_consumed) {
@@ -382,6 +394,8 @@ static php_stream_filter *php_bz2_filter_create(const char *filtername, zval *fi
 			}
 		}
 
+		data->blockSize100k = blockSize100k;
+		data->workFactor = workFactor;
 		status = BZ2_bzCompressInit(&(data->strm), blockSize100k, 0, workFactor);
 		fops = &php_bz2_compress_ops;
 	} else {
